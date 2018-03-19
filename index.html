@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Compiladores</title>
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+</head>
+<body>
+	<div class="container-fluid jumbotron">
+		<h1 class="display-4">Compilador de expressão matemática</h1>
+		<p class="lead">Este compilador tem por finalidade analisar simples expressões matemáticas com as operações básicas.</p>
+		<hr class="my-4">
+		<p>
+			<label>Expressão:</label>
+			<input type="text" class="form-control" name="expression" id="expression">
+		</p>
+		<p class="lead">
+			<div class="btn-group btn-group-toggle" data-toggle="buttons">
+			  	<label class="btn btn-secondary active" id="verify-scanner">
+			    	<input type="radio" name="options" id="option1" autocomplete="off" checked> Scanner
+			  	</label>
+			  	<label class="btn btn-secondary" id="verify-parser">
+			    	<input type="radio" name="options" id="option2" autocomplete="off"> Parser
+			  	</label>
+			  	<label class="btn btn-secondary" id="verify-translate">
+			    	<input type="radio" name="options" id="option3" autocomplete="off"> Tradutor
+			  	</label>
+			</div>
+		</p>
+		<p class="results">
+			<div class="alert alert-secondary" role="alert"><strong>Resultado Scanner:</strong> <span id="result-scanner">Aguardando entrada ...</span></div>
+			<div class="alert alert-secondary" role="alert"><strong>Resultado Parse:</strong> <span id="result-parser">Aguardando entrada ...</span></div>
+		</p>
+	</div>
+	<footer class="container-fluid p-3 bg-secondary text-white fixed-bottom">
+		COMPILADORES | CMP1076 (2018-1) <span class="float-right">Desenvolvido por Alaor Jr. &copy;</span>
+	</footer>
+<script
+  src="https://code.jquery.com/jquery-2.2.4.min.js"
+  integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44="
+  crossorigin="anonymous"></script>
+<script type="text/javascript">
+
+const isNumber = function(input) { return !isNaN(parseInt(input)); };
+
+const Token = function(token) {
+	const CONST_TOKENS = {
+		 '+': 'SOMA'
+		,'-': 'SUB'
+		,'*': 'MULT'
+		,'/': 'DIV'
+		,'ERRO': 'ERRO'
+		,'EOF': 'EOF'
+		,'(': 'ABRE_PARENTESES'
+		,')': 'FECHA_PARENTESES'
+	};
+
+	if(isNumber(token))
+		return {
+			type: 'NUM',
+			value: parseInt(token)
+		};
+	else if(CONST_TOKENS[token])
+		return {
+			type: CONST_TOKENS[token],
+			value: token
+		};
+	else
+		throw('ERRO LÉXICO: Token não identificado \"' + token) + '\";'
+
+}
+
+let Scanner = function(input){
+
+	let pos = 0;
+
+	return {
+
+		readNext: function(){
+
+			let read_token;
+
+			if(pos === input.length){
+				read_token = Token('EOF');
+				return read_token;
+			}
+
+			while(input[pos] === ' ' || input[pos] === '\t' || input[pos] === '\n')
+				pos++;
+
+			switch(input[pos]){
+				case '-': {
+					pos++;
+					if(!isNumber(input[pos])){
+						read_token = Token('-');
+					}
+					else{
+						let number = '-' + input[pos];
+						pos++;
+						while(pos < input.length && isNumber(input[pos])){
+							number += input[pos];
+							pos++;
+						}
+						read_token = Token(number);
+					}
+
+					break;
+				}
+
+				case '+': 
+				case '*': 
+				case '/': {
+					read_token =  Token(input[pos]);
+					pos++;
+
+					break;
+				}
+
+				default: {
+					if(isNumber(input[pos])){
+						let number = input[pos];
+						pos++;
+						while(pos < input.length && isNumber(input[pos])){
+							number += input[pos];
+							pos++;
+						}
+						read_token = Token(number);
+					}else{
+						read_token =  Token('ERRO');
+						throw('ERRO LÉXICO: Token não identificado \"' + input[pos]) + '\"';
+					}
+
+					break;
+				}
+			}
+
+			return read_token;
+
+		}
+
+	}
+
+};
+
+let Parser = function(expression){
+
+	let  scn = Scanner(expression)
+		,current_token = null;
+
+	let validateNext = function(token_expected){
+		current_token = scn.readNext();
+
+		let ok = !Array.isArray(token_expected)
+					? current_token.type === token_expected.type
+					: token_expected.find(function(token){ current_token.type === token.type});
+
+		if(ok)
+			return true;
+		else{
+			let expected = !Array.isArray(token_expected)
+							? token_expected.type 
+							: token_expected.map(function(token){ return token.type }).join(' ou ');
+			throw('ERRO SINTÁTICO: \"' + expected + '\" ESPERADO, MAS \"' + current_token.type + '\" ENCONTRADO!')
+		}
+	};
+
+	let parseRemaining = function(){
+		current_token = scn.readNext();
+
+		if(current_token.type === 'SOMA' || current_token.type === 'SUB' || current_token.type === 'MULT'){
+
+			validateNext(Token(new Number));
+			parseRemaining();
+
+		}else if(current_token.type === 'DIV'){
+
+			validateNext(Token(new Number));
+			if(current_token.value === 0){
+				throw('ERRO SINTÁTICO: DIVISÃO POR ZERO!');
+			}
+			parseRemaining();
+
+		}else if(current_token.type === 'NUM'){
+
+			validateNext( 
+				Array(
+					Token('+'),
+					Token('-'),
+					Token('*'),
+					Token('/')
+				)
+			);
+			parseRemaining();
+
+		}
+	};
+
+	validateNext(Token(new Number));
+	parseRemaining();
+
+	if(validateNext(Token('EOF')))
+		return 'EXPRESSÃO CORRETA!';
+	else
+		throw('ERRO SINTÁTICO: SÍMBOLOS ENCONTRADOS APÓS FIM DA EXPRESSAO!');
+
+};
+
+$(document).ready(function(){
+
+	$('.btn').click(function(){
+		$('.btn').removeClass('active');
+		$(this).addClass('active');
+	});
+
+	$('#verify-scanner').click(function(){
+		try{
+			let  scn = Scanner($('#expression').val())
+				,output = '';
+
+			do{
+				t = scn.readNext();
+				output += t.type+': '+t.value+', ';	
+			}while(t.type !== Token('EOF').type)
+
+			output = output.substring(0, output.length-2);
+
+			$('#result-scanner').html(output).parent().attr('class', 'alert alert-success');
+		}catch(e){
+			$('#result-scanner').html(e).parent().attr('class', 'alert alert-danger');
+		}
+	});
+
+	$('#verify-parser').click(function(){
+		try{
+			let  prs = Parser($('#expression').val());
+
+			$('#result-parser').html(prs).parent().attr('class', 'alert alert-success');
+		}catch(e){
+			$('#result-parser').html(e).parent().attr('class', 'alert alert-danger');
+		}
+	});
+
+});
+
+</script>
+</body>
+</html>
