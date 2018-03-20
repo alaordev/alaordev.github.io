@@ -77,6 +77,8 @@ let Scanner = function(input){
 
 	return {
 
+		getPos: function() { return pos; },
+
 		readNext: function(){
 
 			let read_token;
@@ -108,6 +110,8 @@ let Scanner = function(input){
 					break;
 				}
 
+				case '(':
+				case ')':
 				case '+': 
 				case '*': 
 				case '/': {
@@ -128,7 +132,7 @@ let Scanner = function(input){
 						read_token = Token(number);
 					}else{
 						read_token =  Token('ERRO');
-						throw('ERRO LÉXICO: Token não identificado \"' + input[pos]) + '\"';
+						throw('ERRO LÉXICO: Token não identificado \"' + input[pos]) + '\" NA POSIÇÃO \"' + pos + '\"!';
 					}
 
 					break;
@@ -153,7 +157,7 @@ let Parser = function(expression){
 
 		let ok = !Array.isArray(token_expected)
 					? current_token.type === token_expected.type
-					: token_expected.find(function(token){ current_token.type === token.type});
+					: token_expected.find(function(token){ return current_token.type === token.type});
 
 		if(ok)
 			return true;
@@ -161,7 +165,7 @@ let Parser = function(expression){
 			let expected = !Array.isArray(token_expected)
 							? token_expected.type 
 							: token_expected.map(function(token){ return token.type }).join(' ou ');
-			throw('ERRO SINTÁTICO: \"' + expected + '\" ESPERADO, MAS \"' + current_token.type + '\" ENCONTRADO!')
+			throw('ERRO SINTÁTICO: \"' + expected + '\" ESPERADO, MAS \"' + current_token.type + '\" ENCONTRADO NA POSIÇÃO \"' + scn.getPos() + '\"!')
 		}
 	};
 
@@ -170,14 +174,19 @@ let Parser = function(expression){
 
 		if(current_token.type === 'SOMA' || current_token.type === 'SUB' || current_token.type === 'MULT'){
 
-			validateNext(Token(new Number));
+			validateNext(
+				Array(
+					Token(new Number),
+					Token('(')
+				)
+			);
 			parseRemaining();
 
 		}else if(current_token.type === 'DIV'){
 
 			validateNext(Token(new Number));
 			if(current_token.value === 0){
-				throw('ERRO SINTÁTICO: DIVISÃO POR ZERO!');
+				throw('ERRO SINTÁTICO: DIVISÃO POR ZERO NA POSIÇÃO \"' + scn.getPos() + '\"!');
 			}
 			parseRemaining();
 
@@ -188,7 +197,8 @@ let Parser = function(expression){
 					Token('+'),
 					Token('-'),
 					Token('*'),
-					Token('/')
+					Token('/'),
+					Token(')')
 				)
 			);
 			parseRemaining();
@@ -202,7 +212,7 @@ let Parser = function(expression){
 	if(validateNext(Token('EOF')))
 		return 'EXPRESSÃO CORRETA!';
 	else
-		throw('ERRO SINTÁTICO: SÍMBOLOS ENCONTRADOS APÓS FIM DA EXPRESSAO!');
+		throw('ERRO SINTÁTICO: SÍMBOLOS ENCONTRADOS APÓS FIM DA EXPRESSAO NA POSIÇÃO \"' + scn.getPos() + '\"!');
 
 };
 
