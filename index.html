@@ -157,7 +157,7 @@ let Parser = function(expression){
 
 		let ok = !Array.isArray(token_expected)
 					? current_token.type === token_expected.type
-					: token_expected.find(function(token){ return current_token.type === token.type});
+					: token_expected.find(function(token){ return current_token.type === token.type; });
 
 		if(ok)
 			return true;
@@ -170,7 +170,6 @@ let Parser = function(expression){
 	};
 
 	let parseRemaining = function(){
-		current_token = scn.readNext();
 
 		if(current_token.type === 'SOMA' || current_token.type === 'SUB' || current_token.type === 'MULT'){
 
@@ -198,21 +197,35 @@ let Parser = function(expression){
 					Token('-'),
 					Token('*'),
 					Token('/'),
-					Token(')')
+					Token(')'),
+					Token('EOF')
 				)
 			);
 			parseRemaining();
 
+		}else if(current_token.type === 'ABRE_PARENTESES'){
+			validateNext(Token(new Number));
+			parseRemaining();
+		}else if(current_token.type === 'FECHA_PARENTESES'){
+			validateNext( 
+				Array(
+					Token('+'),
+					Token('-'),
+					Token('*'),
+					Token('/'),
+					Token(')'),
+					Token('EOF')
+				)
+			);
+			parseRemaining();
 		}
 	};
 
+	
 	validateNext(Token(new Number));
 	parseRemaining();
 
-	if(validateNext(Token('EOF')))
-		return 'EXPRESSÃO CORRETA!';
-	else
-		throw('ERRO SINTÁTICO: SÍMBOLOS ENCONTRADOS APÓS FIM DA EXPRESSAO NA POSIÇÃO \"' + scn.getPos() + '\"!');
+	return 'EXPRESSÃO CORRETA!';
 
 };
 
