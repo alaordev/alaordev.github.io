@@ -23,8 +23,8 @@
 			  	<label class="btn btn-secondary" id="verify-parser">
 			    	<input type="radio" name="options" id="option2" autocomplete="off"> Parser
 			  	</label>
-			  	<label class="btn btn-secondary" id="verify-translate">
-			    	<input type="radio" name="options" id="option3" autocomplete="off"> Tradutor
+			  	<label class="btn btn-secondary" id="verify-assembly">
+			    	<input type="radio" name="options" id="option3" autocomplete="off"> Assembly
 			  	</label>
 			</div>
 		</p>
@@ -41,9 +41,7 @@
   integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44="
   crossorigin="anonymous"></script>
 <script type="text/javascript">
-
 const isNumber = function(input) { return !isNaN(parseInt(input)); };
-
 const Token = function(token) {
 	const CONST_TOKENS = {
 		 '+': 'SOMA'
@@ -55,7 +53,6 @@ const Token = function(token) {
 		,'(': 'ABRE_PARENTESES'
 		,')': 'FECHA_PARENTESES'
 	};
-
 	if(isNumber(token))
 		return {
 			type: 'NUM',
@@ -68,29 +65,19 @@ const Token = function(token) {
 		};
 	else
 		throw('ERRO LÉXICO: Token não identificado \"' + token) + '\";'
-
 }
-
 let Scanner = function(input){
-
 	let pos = 0;
-
 	return {
-
 		getPos: function() { return pos; },
-
 		readNext: function(){
-
 			let read_token;
-
 			if(pos === input.length){
 				read_token = Token('EOF');
 				return read_token;
 			}
-
 			while(input[pos] === ' ' || input[pos] === '\t' || input[pos] === '\n')
 				pos++;
-
 			switch(input[pos]){
 				case '-': {
 					pos++;
@@ -106,10 +93,8 @@ let Scanner = function(input){
 						}
 						read_token = Token(number);
 					}
-
 					break;
 				}
-
 				case '(':
 				case ')':
 				case '+': 
@@ -117,10 +102,8 @@ let Scanner = function(input){
 				case '/': {
 					read_token =  Token(input[pos]);
 					pos++;
-
 					break;
 				}
-
 				default: {
 					if(isNumber(input[pos])){
 						let number = input[pos];
@@ -134,31 +117,23 @@ let Scanner = function(input){
 						read_token =  Token('ERRO');
 						throw('ERRO LÉXICO: Token não identificado \"' + input[pos]) + '\" NA POSIÇÃO \"' + pos + '\"!';
 					}
-
 					break;
 				}
 			}
-
 			return read_token;
-
 		}
-
 	}
-
 };
-
 let Parser = function(expression){
 
+	
 	let  scn = Scanner(expression)
 		,current_token = null;
-
 	let validateNext = function(token_expected){
 		current_token = scn.readNext();
-
 		let ok = !Array.isArray(token_expected)
 					? current_token.type === token_expected.type
 					: token_expected.find(function(token){ return current_token.type === token.type; });
-
 		if(ok)
 			return true;
 		else{
@@ -168,11 +143,8 @@ let Parser = function(expression){
 			throw('ERRO SINTÁTICO: \"' + expected + '\" ESPERADO, MAS \"' + current_token.type + '\" ENCONTRADO NA POSIÇÃO \"' + scn.getPos() + '\"!')
 		}
 	};
-
 	let parseRemaining = function(){
-
 		if(current_token.type === 'SOMA' || current_token.type === 'SUB' || current_token.type === 'MULT'){
-
 			validateNext(
 				Array(
 					Token(new Number),
@@ -180,17 +152,13 @@ let Parser = function(expression){
 				)
 			);
 			parseRemaining();
-
 		}else if(current_token.type === 'DIV'){
-
 			validateNext(Token(new Number));
 			if(current_token.value === 0){
-				throw('ERRO SINTÁTICO: DIVISÃO POR ZERO NA POSIÇÃO \"' + scn.getPos() + '\"!');
+				throw('ERRO SINTÁTICO: DIVISÃO POR ZERO NA POSIÇÃO <br>jhgjhg"' + scn.getPos() + '\"!');
 			}
 			parseRemaining();
-
 		}else if(current_token.type === 'NUM'){
-
 			validateNext( 
 				Array(
 					Token('+'),
@@ -202,7 +170,6 @@ let Parser = function(expression){
 				)
 			);
 			parseRemaining();
-
 		}else if(current_token.type === 'ABRE_PARENTESES'){
 			validateNext(Token(new Number));
 			parseRemaining();
@@ -220,52 +187,164 @@ let Parser = function(expression){
 			parseRemaining();
 		}
 	};
-
 	
 	validateNext(Token(new Number));
 	parseRemaining();
-
 	return 'EXPRESSÃO CORRETA!';
-
 };
 
-$(document).ready(function(){
 
+//--------------------------------------------------------------------------------------------------------------------------
+
+let Assembly = function(input){
+	
+	let pos = 0;
+	let contvaria = 0;
+	let cont = 0;
+	let cont2 = 0;
+	var num = [];
+	var expre = [];
+	let read_token;
+	
+	while(pos < input.length){
+		
+		while(input[pos] === ' ' || input[pos] === '\t' || input[pos] === '\n'){
+			pos++;
+		}
+		switch(input[pos]){
+			case '-': {
+				pos++;
+				if(!isNumber(input[pos])){
+					read_token = Token('-');
+					expre[cont2] = '-';
+					cont2++;
+				}
+				else{
+					let number = '-' + input[pos];
+					pos++;
+					while(pos < input.length && isNumber(input[pos])){
+						number += input[pos];
+						pos++;
+					}
+					num[contvaria] = number;
+					contvaria++;
+					expre[cont2] = number;
+					cont2++;
+					
+				}
+				break;
+			}
+			case '(':{
+				expre[cont2] = input[pos];
+				cont2++;
+				pos++;
+				break;
+			}
+			case ')':{
+				expre[cont2] = input[pos];
+				cont2++;
+				pos++;
+				break;
+			}
+			case '+':{
+				expre[cont2] = input[pos];
+				cont2++;
+				pos++;
+				break;
+			}
+			case '*':{
+				expre[cont2] = input[pos];
+				cont2++;
+				pos++;
+				break;
+			}			
+			case '/':{
+				expre[cont2] = input[pos];
+				cont2++;
+				pos++;
+				break;
+			}
+			default: {
+				if(isNumber(input[pos])){
+					let number = input[pos];
+					pos++;
+					while(pos < input.length && isNumber(input[pos])){
+						number += input[pos];
+						pos++;
+					}
+					num[contvaria] = number;
+					contvaria++;
+					expre[cont2] = number;
+					cont2++;
+				}else{
+					
+				}
+				break;
+			}
+			
+		}
+	}
+	let token = input[pos];
+	
+	cont = 0;
+	let registra_variaveis = '';
+	while(cont < contvaria){
+		registra_variaveis += '\nvar' + (cont+1) +':     dq     ' + num[cont];
+		cont++;
+	}
+	
+	cont = 0;
+	let expret = '';
+	while(cont < cont2){
+		expret += expre[cont];
+		cont++;
+	}
+	
+	
+	
+	window.alert(expret + '\nCódigo em Assembly:   ' + 
+	'	\n\nSECTION .data' +
+	'     ' + registra_variaveis + 
+	'\nfmt:    db "%s%e,",10,0' + 
+	'\n\nSECTION .bss \nc:     resq     1\nr:     resq     1\nop1:     resq     1\nop2:     resq     1' + 
+	'\n\nSECTION .text\nglobal main\nmain: \npush     rbp' + 
+	'\n ' + //aqui vem os comados para calculo da expressão
+	'\npabc\npop     rbp\nmov rax,0\nret');
+	
+};
+//--------------------------------------------------------------------------------------------------------------------------
+
+$(document).ready(function(){
 	$('.btn').click(function(){
 		$('.btn').removeClass('active');
 		$(this).addClass('active');
 	});
-
 	$('#verify-scanner').click(function(){
 		try{
 			let  scn = Scanner($('#expression').val())
 				,output = '';
-
 			do{
 				t = scn.readNext();
 				output += t.type+': '+t.value+', ';	
 			}while(t.type !== Token('EOF').type)
-
 			output = output.substring(0, output.length-2);
-
 			$('#result-scanner').html(output).parent().attr('class', 'alert alert-success');
 		}catch(e){
 			$('#result-scanner').html(e).parent().attr('class', 'alert alert-danger');
 		}
 	});
-
 	$('#verify-parser').click(function(){
 		try{
 			let  prs = Parser($('#expression').val());
-
 			$('#result-parser').html(prs).parent().attr('class', 'alert alert-success');
 		}catch(e){
 			$('#result-parser').html(e).parent().attr('class', 'alert alert-danger');
 		}
 	});
-
+	$('#verify-assembly').click(function(){
+			let  aprs = Assembly($('#expression').val());
+	});
 });
-
 </script>
 </body>
 </html>
